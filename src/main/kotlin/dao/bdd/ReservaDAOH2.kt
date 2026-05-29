@@ -1,7 +1,9 @@
 package org.iesra.dao.bdd
 
 
+import org.iesra.config.DatabaseManager
 import org.iesra.dao.ReservaDAO
+import org.iesra.model.Reserva
 import java.sql.SQLException
 
 class ReservaDAOH2 : ReservaDAO {
