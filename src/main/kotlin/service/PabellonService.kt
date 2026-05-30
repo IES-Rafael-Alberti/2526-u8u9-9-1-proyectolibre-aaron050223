@@ -9,6 +9,8 @@ import java.time.format.ResolverStyle
 
 class PabellonService(private val reservaDAO: ReservaDAO) {
 
+    private val formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
+
     /** Intenta crear una nueva reserva. Devuelve false si el turno ya esta ocupado. */
     fun hacerReserva(idPista: Int, fecha: String, turno: Int, usuario: String): Boolean {
         val reservasDelDia = reservaDAO.buscarPorPistaYFecha(idPista, fecha)
@@ -35,6 +37,20 @@ class PabellonService(private val reservaDAO: ReservaDAO) {
         return reservaDAO.obtenerTodas()
     }
 
+    /** Devuelve reservas con fecha >= hoy (visibles para el publico). */
+    fun obtenerReservasFuturas(hoy: LocalDate = LocalDate.now()): List<Reserva> {
+        return reservaDAO.obtenerTodas()
+            .filter { LocalDate.parse(it.fecha, formatter) >= hoy }
+            .sortedWith(compareBy<Reserva>({ LocalDate.parse(it.fecha, formatter) }, { it.idPista }, { it.turno }, { it.id }))
+    }
+
+    /** Devuelve reservas con fecha < hoy (historico, util para reseñas). */
+    fun obtenerReservasPasadas(hoy: LocalDate = LocalDate.now()): List<Reserva> {
+        return reservaDAO.obtenerTodas()
+            .filter { LocalDate.parse(it.fecha, formatter).isBefore(hoy) }
+            .sortedWith(compareBy<Reserva>({ LocalDate.parse(it.fecha, formatter) }, { it.idPista }, { it.turno }, { it.id }))
+    }
+
     /** Elimina una reserva por id. Devuelve true si existia y se elimino. */
     fun eliminarReservaPorId(id: Int): Boolean {
         val existe = reservaDAO.obtenerTodas().any { it.id == id }
@@ -43,16 +59,21 @@ class PabellonService(private val reservaDAO: ReservaDAO) {
         return true
     }
 
-    /** Elimina reservas con fecha anterior a hoy y devuelve cuantas se han borrado. */
-    fun limpiarReservasAntiguas(hoy: LocalDate = LocalDate.now()): Int {
-        val formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
-        val expiradas = reservaDAO.obtenerTodas().filter {
-            val fechaReserva = LocalDate.parse(it.fecha, formatter)
-            fechaReserva.isBefore(hoy)
-        }
+    /**
+     * Elimina una reserva solo si su fecha es >= hoy.
+     * Devuelve false si no existe o si pertenece al historico.
+     */
+    fun eliminarReservaFuturaPorId(id: Int, hoy: LocalDate = LocalDate.now()): Boolean {
+        val reserva = reservaDAO.obtenerTodas().firstOrNull { it.id == id } ?: return false
+        val fechaReserva = LocalDate.parse(reserva.fecha, formatter)
+        if (fechaReserva.isBefore(hoy)) return false
+        reservaDAO.eliminarPorId(id)
+        return true
+    }
 
-        expiradas.forEach { reservaDAO.eliminarPorId(it.id) }
-        return expiradas.size
+    /** Devuelve cuantas reservas pertenecen al historico (fecha anterior a hoy). No borra nada. */
+    fun limpiarReservasAntiguas(hoy: LocalDate = LocalDate.now()): Int {
+        return reservaDAO.obtenerTodas().count { LocalDate.parse(it.fecha, formatter).isBefore(hoy) }
     }
 
 }

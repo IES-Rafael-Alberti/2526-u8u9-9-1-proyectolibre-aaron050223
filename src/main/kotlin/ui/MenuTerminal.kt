@@ -107,7 +107,7 @@ class MenuTerminal(private val servicio: PabellonService) {
     }
 
     private fun flujoEliminarReserva() {
-        val reservas = servicio.obtenerTodasLasReservas()
+        val reservas = servicio.obtenerReservasFuturas()
         if (reservas.isEmpty()) {
             println("\nNo hay reservas registradas.")
             return
@@ -116,11 +116,11 @@ class MenuTerminal(private val servicio: PabellonService) {
         mostrarTodasLasReservas()
         val id = preguntarIdReserva() ?: return
 
-        val eliminado = servicio.eliminarReservaPorId(id)
+        val eliminado = servicio.eliminarReservaFuturaPorId(id)
         if (eliminado) {
             println("\n✅ Reserva eliminada correctamente.")
         } else {
-            println("\n❌ No existe ninguna reserva con ese ID.")
+            println("\n❌ No existe ninguna reserva futura con ese ID.")
         }
     }
 
@@ -149,7 +149,7 @@ class MenuTerminal(private val servicio: PabellonService) {
     }
 
     private fun mostrarTodasLasReservas() {
-        val reservas = servicio.obtenerTodasLasReservas()
+        val reservas = servicio.obtenerReservasFuturas()
         if (reservas.isEmpty()) {
             println("\nNo hay reservas registradas.")
             return

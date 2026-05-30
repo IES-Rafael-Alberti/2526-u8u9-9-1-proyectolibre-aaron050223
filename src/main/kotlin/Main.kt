@@ -14,8 +14,6 @@ fun main() {
     val servicio = PabellonService(dao)
     val ui = MenuTerminal(servicio)
 
-    servicio.limpiarReservasAntiguas()
-
     var bucle = true
     do {
         val continuar = ui.iniciarFlujoReserva()
