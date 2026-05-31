@@ -20,6 +20,10 @@ class ReservaDAOMemory : ReservaDAO {
         return reservas.toList()
     }
 
+    override fun obtenerPorId(id: Int): Reserva? {
+        return reservas.firstOrNull { it.id == id }
+    }
+
     override fun eliminarPorId(id: Int) {
         reservas.removeIf { it.id == id }
     }

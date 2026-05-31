@@ -89,6 +89,35 @@ class ReservaDAOH2 : ReservaDAO {
         return listaReservas
     }
 
+    override fun obtenerPorId(id: Int): Reserva? {
+        val sql = "SELECT * FROM reservas WHERE id = ?"
+
+        try {
+            val databaseManager = DatabaseManager()
+            databaseManager.conexion().use { conn ->
+                conn.prepareStatement(sql).use { ps ->
+                    ps.setInt(1, id)
+
+                    ps.executeQuery().use {
+                        if (it.next()) {
+                            return Reserva(
+                                id = it.getInt("id"),
+                                idPista = it.getInt("id_pista"),
+                                fecha = it.getString("fecha"),
+                                turno = it.getInt("turno"),
+                                usuario = it.getString("usuario")
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (e: SQLException) {
+            System.err.println("Error al obtener reserva por id en H2: ${e.message}")
+        }
+
+        return null
+    }
+
     override fun eliminarPorId(id: Int) {
         val sql = "DELETE FROM reservas WHERE id = ?"
 

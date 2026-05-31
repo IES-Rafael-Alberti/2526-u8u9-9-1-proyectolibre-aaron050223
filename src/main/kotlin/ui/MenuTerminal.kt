@@ -29,7 +29,8 @@ class MenuTerminal(private val servicio: PabellonService) {
                 1 -> flujoHacerReserva()
                 2 -> flujoEliminarReserva()
                 3 -> mostrarTodasLasReservas()
-                4 -> {
+                4 -> flujoResenas()
+                5 -> {
                     println("\nPrograma finalizado.")
                     return false
                 }
@@ -47,7 +48,48 @@ class MenuTerminal(private val servicio: PabellonService) {
             println("1. Hacer reserva")
             println("2. Eliminar reserva")
             println("3. Ver reservas")
-            println("4. Salir")
+            println("4. Reseñas")
+            println("5. Salir")
+            print("Elige una opción (1-5): ")
+
+            val input = readln().toIntOrNull()
+            if (input != null && input in 1..5) {
+                opcion = input
+                bucle = false
+            } else {
+                println("❌ Opción inválida. Evita usar letras y escribe un número del 1 al 5.")
+            }
+        }
+
+        return opcion
+    }
+
+    private fun flujoResenas() {
+        var bucle = true
+        while (bucle) {
+            println("\n==========================================")
+            println("                 RESEÑAS                 ")
+            println("==========================================")
+
+            val opcion = preguntarOpcionResenas()
+            when (opcion) {
+                1 -> flujoCrearResena()
+                2 -> flujoVerResenas()
+                3 -> flujoEliminarResena()
+                4 -> bucle = false
+            }
+        }
+    }
+
+    private fun preguntarOpcionResenas(): Int {
+        var bucle = true
+        var opcion = 0
+        while (bucle) {
+            println("\n--- SELECCIÓN ---")
+            println("1. Hacer reseña")
+            println("2. Ver reseñas")
+            println("3. Eliminar reseña")
+            println("4. Volver")
             print("Elige una opción (1-4): ")
 
             val input = readln().toIntOrNull()
@@ -60,6 +102,147 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
 
         return opcion
+    }
+
+    private fun flujoCrearResena() {
+        val reservas = servicio.obtenerReservasPasadasSinResena()
+        if (reservas.isEmpty()) {
+            println("\nNo hay reservas pasadas disponibles para reseñar.")
+            return
+        }
+
+        println("\n--- RESERVAS PASADAS (SIN RESEÑA) ---")
+        reservas.forEach {
+            val deporte = nombresDeportes[it.idPista] ?: "Pista ${it.idPista}"
+            val horario = horariosTurnos[it.turno] ?: "Turno ${it.turno}"
+            println("#${it.id} | $deporte | ${it.fecha} | $horario | ${it.usuario}")
+        }
+
+        val reservaId = preguntarIdReservaResena() ?: return
+        if (reservas.none { it.id == reservaId }) {
+            println("\n❌ Debes elegir el ID de una de las reservas mostradas.")
+            return
+        }
+
+        val nota = preguntarNotaResena() ?: return
+        val descripcion = preguntarDescripcionResena() ?: return
+
+        val ok = servicio.crearResena(reservaId = reservaId, nota = nota, descripcion = descripcion)
+        if (ok) {
+            println("\n✅ Reseña guardada correctamente.")
+        } else {
+            println("\n❌ No se pudo guardar la reseña. Revisa nota (1-5) y descripción (1-100), o puede que ya exista.")
+        }
+    }
+
+    private fun flujoVerResenas() {
+        val resenas = servicio.obtenerResenas()
+        if (resenas.isEmpty()) {
+            println("\nNo hay reseñas registradas.")
+            return
+        }
+
+        val reservasPorId = servicio.obtenerTodasLasReservas().associateBy { it.id }
+
+        println("\n--- LISTADO DE RESEÑAS ---")
+        resenas.forEach { r ->
+            val reserva = reservasPorId[r.reservaId]
+            val cabecera = if (reserva != null) {
+                val deporte = nombresDeportes[reserva.idPista] ?: "Pista ${reserva.idPista}"
+                val horario = horariosTurnos[reserva.turno] ?: "Turno ${reserva.turno}"
+                "Reserva #${reserva.id} | $deporte | ${reserva.fecha} | $horario | ${reserva.usuario}"
+            } else {
+                "Reserva #${r.reservaId}"
+            }
+
+            println("$cabecera | Nota: ${r.nota} | ${r.descripcion}")
+        }
+    }
+
+    private fun flujoEliminarResena() {
+        val resenas = servicio.obtenerResenas()
+        if (resenas.isEmpty()) {
+            println("\nNo hay reseñas para eliminar.")
+            return
+        }
+
+        println("\n--- RESEÑAS REGISTRADAS ---")
+        resenas.forEach { println("Reserva #${it.reservaId} | Nota: ${it.nota} | ${it.descripcion}") }
+
+        val reservaId = preguntarIdReservaResena() ?: return
+        val eliminado = servicio.eliminarResenaPorReservaId(reservaId)
+        if (eliminado) {
+            println("\n✅ Reseña eliminada correctamente.")
+        } else {
+            println("\n❌ No existe ninguna reseña para esa reserva.")
+        }
+    }
+
+    private fun preguntarIdReservaResena(): Int? {
+        var bucle = true
+        var id: Int? = null
+
+        while (bucle) {
+            print("\nIntroduce el ID de la reserva (0 para volver): ")
+            val input = readln().toIntOrNull()
+            if (input != null) {
+                if (input == 0) {
+                    bucle = false
+                } else if (input > 0) {
+                    id = input
+                    bucle = false
+                } else {
+                    println("❌ ID no válido. Debe ser un número mayor que 0.")
+                }
+            } else {
+                println("❌ ID no válido. Debe ser un número.")
+            }
+        }
+
+        return id
+    }
+
+    private fun preguntarNotaResena(): Double? {
+        var bucle = true
+        var nota: Double? = null
+
+        while (bucle) {
+            print("\nIntroduce una nota (1-5) (0 para volver): ")
+            val input = readln().trim()
+            if (input == "0") return null
+
+            val normalizado = input.replace(',', '.')
+            val valor = normalizado.toDoubleOrNull()
+            if (valor != null && valor in 1.0..5.0) {
+                nota = valor
+                bucle = false
+            } else {
+                println("❌ Nota no válida. Debe ser un número entre 1 y 5.")
+            }
+        }
+
+        return nota
+    }
+
+    private fun preguntarDescripcionResena(): String? {
+        var bucle = true
+        var descripcion: String? = null
+
+        while (bucle) {
+            print("\nIntroduce una descripción (1-100 caracteres) (0 para volver): ")
+            val input = readln()
+            if (input == "0") return null
+
+            val desc = input.trim()
+            if (desc.length in 1..100) {
+                descripcion = desc
+                bucle = false
+            } else {
+                println("❌ Descripción no válida. Debe tener entre 1 y 100 caracteres.")
+            }
+        }
+
+        return descripcion
     }
 
     private fun flujoHacerReserva() {

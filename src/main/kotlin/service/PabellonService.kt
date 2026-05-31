@@ -2,12 +2,14 @@ package org.iesra.service
 
 
 import org.iesra.dao.ReservaDAO
+import org.iesra.dao.ResenaDAO
 import org.iesra.model.Reserva
+import org.iesra.model.Resena
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 
-class PabellonService(private val reservaDAO: ReservaDAO) {
+class PabellonService(private val reservaDAO: ReservaDAO, private val resenaDAO: ResenaDAO) {
 
     private val formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
 
@@ -37,6 +39,41 @@ class PabellonService(private val reservaDAO: ReservaDAO) {
         return reservaDAO.obtenerTodas()
     }
 
+    /** Devuelve reservas pasadas sin reseña (disponibles para reseñar). */
+    fun obtenerReservasPasadasSinResena(hoy: LocalDate = LocalDate.now()): List<Reserva> {
+        val idsConResena = resenaDAO.obtenerTodas().mapTo(mutableSetOf()) { it.reservaId }
+        return obtenerReservasPasadas(hoy).filterNot { idsConResena.contains(it.id) }
+    }
+
+    /** Crea una reseña para una reserva pasada. Devuelve false si no cumple reglas. */
+    fun crearResena(reservaId: Int, nota: Double, descripcion: String, hoy: LocalDate = LocalDate.now()): Boolean {
+        val desc = descripcion.trim()
+        if (nota < 1.0 || nota > 5.0) return false
+        if (desc.length !in 1..100) return false
+
+        val reserva = reservaDAO.obtenerPorId(reservaId) ?: return false
+        val fechaReserva = LocalDate.parse(reserva.fecha, formatter)
+        if (!fechaReserva.isBefore(hoy)) return false
+        if (resenaDAO.obtenerPorReservaId(reservaId) != null) return false
+
+        return try {
+            resenaDAO.guardar(reservaId = reservaId, nota = nota, descripcion = desc)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Devuelve todas las reseñas. */
+    fun obtenerResenas(): List<Resena> {
+        return resenaDAO.obtenerTodas()
+    }
+
+    /** Elimina una reseña por reservaId. */
+    fun eliminarResenaPorReservaId(reservaId: Int): Boolean {
+        return resenaDAO.eliminarPorReservaId(reservaId)
+    }
+
     /** Devuelve reservas con fecha >= hoy (visibles para el publico). */
     fun obtenerReservasFuturas(hoy: LocalDate = LocalDate.now()): List<Reserva> {
         return reservaDAO.obtenerTodas()
@@ -53,7 +90,7 @@ class PabellonService(private val reservaDAO: ReservaDAO) {
 
     /** Elimina una reserva por id. Devuelve true si existia y se elimino. */
     fun eliminarReservaPorId(id: Int): Boolean {
-        val existe = reservaDAO.obtenerTodas().any { it.id == id }
+        val existe = reservaDAO.obtenerPorId(id) != null
         if (!existe) return false
         reservaDAO.eliminarPorId(id)
         return true
@@ -64,7 +101,7 @@ class PabellonService(private val reservaDAO: ReservaDAO) {
      * Devuelve false si no existe o si pertenece al historico.
      */
     fun eliminarReservaFuturaPorId(id: Int, hoy: LocalDate = LocalDate.now()): Boolean {
-        val reserva = reservaDAO.obtenerTodas().firstOrNull { it.id == id } ?: return false
+        val reserva = reservaDAO.obtenerPorId(id) ?: return false
         val fechaReserva = LocalDate.parse(reserva.fecha, formatter)
         if (fechaReserva.isBefore(hoy)) return false
         reservaDAO.eliminarPorId(id)
