@@ -46,3 +46,7 @@ bin/
 
 .idea
 .atl
+
+# BBDD y logs (generados en ejecucion)
+db/
+logs/
