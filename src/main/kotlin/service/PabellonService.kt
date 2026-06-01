@@ -2,16 +2,30 @@ package org.iesra.service
 
 
 import org.iesra.dao.ReservaDAO
+import org.iesra.dao.PistaDAO
 import org.iesra.dao.ResenaDAO
+import org.iesra.model.Pista
 import org.iesra.model.Reserva
 import org.iesra.model.Resena
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 
-class PabellonService(private val reservaDAO: ReservaDAO, private val resenaDAO: ResenaDAO) {
+class PabellonService(
+    private val reservaDAO: ReservaDAO,
+    private val pistaDAO: PistaDAO,
+    private val resenaDAO: ResenaDAO
+) {
 
     private val formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
+
+    fun obtenerPistas(): List<Pista> {
+        return pistaDAO.obtenerTodas()
+    }
+
+    fun obtenerMapaPistas(): Map<Int, String> {
+        return pistaDAO.obtenerTodas().associate { it.id to it.deporte }
+    }
 
     /** Intenta crear una nueva reserva. Devuelve false si el turno ya esta ocupado. */
     fun hacerReserva(idPista: Int, fecha: String, turno: Int, usuario: String): Boolean {

@@ -9,12 +9,18 @@ import java.time.format.ResolverStyle
 
 class MenuTerminal(private val servicio: PabellonService) {
 
-    private val nombresDeportes = mapOf(1 to "Fútbol", 2 to "Baloncesto", 3 to "Pádel", 4 to "Fútbol Sala")
+    private val nombresDeportes = servicio.obtenerMapaPistas()
 
     private val horariosTurnos = mapOf(
         1 to "09:00 - 10:30", 2 to "10:30 - 12:00", 3 to "12:00 - 13:30", 4 to "13:30 - 15:00",
         5 to "15:00 - 16:30", 6 to "16:30 - 18:00", 7 to "18:00 - 19:30", 8 to "19:30 - 21:00"
     )
+
+    init {
+        if (nombresDeportes.isEmpty()) {
+            System.err.println("No se han encontrado pistas en la base de datos. Revisa la inicialización.")
+        }
+    }
 
     /** @return true si el programa debe seguir, false si el usuario decidio salir. */
     fun iniciarFlujoReserva(): Boolean {
@@ -267,22 +273,23 @@ class MenuTerminal(private val servicio: PabellonService) {
 
         while (bucle) {
             println("\n--- SELECCIÓN DE DEPORTE ---")
-            nombresDeportes.forEach { (id, nombre) -> println("$id. $nombre") }
+            nombresDeportes.toSortedMap().forEach { (id, nombre) -> println("$id. $nombre") }
             println("0. Volver")
-            print("Elige una opción (0-4): ")
+            val maxId = (nombresDeportes.keys.maxOrNull() ?: 0)
+            print("Elige una opción (0-$maxId): ")
 
             val input = readln().toIntOrNull()
             if (input != null) {
                 if (input == 0) {
                     bucle = false
-                } else if (input in 1..4) {
+                } else if (nombresDeportes.containsKey(input)) {
                     idPista = input
                     bucle = false
                 } else {
-                    println("❌ Opción inválida. Evita usar letras y escribe un número del 0 al 4.")
+                    println("❌ Opción inválida. Evita usar letras y elige un id de pista válido.")
                 }
             } else {
-                println("❌ Opción inválida. Evita usar letras y escribe un número del 0 al 4.")
+                println("❌ Opción inválida. Evita usar letras y elige un id de pista válido.")
             }
         }
 
