@@ -142,25 +142,97 @@
 
 ## 5. Validaciones y errores
 
-- **Expresiones regulares:** <!-- Dato, regex, ejemplo válido/no válido, enlace -->
-- **Excepciones controladas:** <!-- Tipo de error y respuesta del programa -->
-- **Excepciones propias:** <!-- Si existen, indicar clase y motivo -->
+- **Expresiones regulares:**
+- Dato validado: nombre de usuario (usuario) al hacer una reserva.
+  - Regex: ^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$.
+  - Longitud: length in 2..30 (controlada aparte, fuera de la regex).
+    https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/5251f6aa3a215c5ae5004ab662828965f9149424/src/main/kotlin/ui/MenuTerminal.kt#L26-L29
+- **Excepciones controladas:**
+  - DateTimeParseException -> se captura en MenuTerminal.preguntarFecha() y se muestra un mensaje al usuario, repitiendo el input.
+  - SQLException en H2 (lecturas/escrituras/inicialización) -> se captura en DatabaseManager, ReservaDAOH2 y PistaDAOH.
+  - MongoWriteException al insertar una reseña duplicada (índice único) -> se origina en ResenaDAOMongo.guardar y PabellonService.crearResena la captura con un catch devolviendo false.
+  - https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/5251f6aa3a215c5ae5004ab662828965f9149424/src/main/kotlin/service/PabellonService.kt#L63-L79
+- **Excepciones propias:**
+  - No realiazadas aun.
 
 ## 6. Pruebas y evidencias
 
-- **Pruebas realizadas:** <!-- Manuales o automatizadas -->
-- **Datos de prueba:** <!-- Qué datos se usaron -->
-- **Evidencia de ejecución:** <!-- Salida de consola o captura -->
-- **Evidencia de ficheros:** <!-- Fichero generado/leído -->
-- **Evidencia de MongoDB:** <!-- Inserción/consulta -->
-- **Evidencia de SQL:** <!-- CRUD realizado -->
+- **Pruebas realizadas:**
+  - Pruebas automatizadas con Kotest sobre la lógica de negocio en PabellonServiceTest.
+- **Datos de prueba:**
+  - Reservas: creadas en las pruebas automatizadas con fechas fijas.
+  - Reseñas: creadas con nota válida (por ejemplo, 4.5 o 4.0) y descripción corta ("Ok", "Bien", etc.).
+- **Evidencia de ejecución:**
+  - Menú principal y submenú de Reseñas (mensajes del MenuTerminal).
+  - Salida por consola:
+  ```
+  --- SELECCIÓN ---
+  1. Hacer reserva
+  2. Eliminar reserva
+  3. Ver reservas
+  4. Reseñas
+  5. Salir
+  Elige una opción (1-5):
+  ```
+- **Evidencia de ficheros:**
+  - logs/mongo.log: fichero generado automáticamente al arrancar la app, donde se vuelcan los logs del driver de MongoDB
+  ```
+  [main] INFO org.mongodb.driver.client - MongoClient with metadata {"application": {"name": "basedatosaaron"}, "driver": {"name": "mongo-java-driver|sync", "version": "5.2.0"}, "os": {"type": "Darwin", "name": "Mac OS X", "architecture": "aarch64", "version": "26.2"}, "platform": "Java/Microsoft/21.0.11+10-LTS"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=MongoCredential{mechanism=null, userName='userAlberti', source='admin', password=<hidden>, mechanismProperties=<hidden>}, transportSettings=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@59717824, com.mongodb.Jep395RecordCodecProvider@146044d7, com.mongodb.KotlinCodecProvider@1e9e725a]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[127.0.0.1:27017], srvHost=basedatosaaron.evvnhth.mongodb.net, srvServiceName=mongodb, mode=MULTIPLE, requiredClusterType=REPLICA_SET, requiredReplicaSetName='atlas-7cozd2-shard-0', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=true, invalidHostNameAllowed=false, context=null}, applicationName='basedatosaaron', compressorList=[], uuidRepresentation=UNSPECIFIED, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-srv-basedatosaaron.evvnhth.mongodb.net] INFO org.mongodb.driver.cluster - Adding discovered server ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017 to client view of cluster
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-srv-basedatosaaron.evvnhth.mongodb.net] INFO org.mongodb.driver.cluster - Adding discovered server ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017 to client view of cluster
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-srv-basedatosaaron.evvnhth.mongodb.net] INFO org.mongodb.driver.cluster - Adding discovered server ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017 to client view of cluster
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017] INFO org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=317351250, minRoundTripTimeNanos=0, setName='atlas-7cozd2-shard-0', canonicalAddress=ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017, hosts=[ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017, ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017, ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017], passives=[], arbiters=[], primary='ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='euw3-az1'}, Tag{name='cacheState', value='READY'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='EU_WEST_3'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=42, topologyVersion=TopologyVersion{processId=6a11df424ea36f3a2a3eb082, counter=4}, lastWriteDate=Tue Jun 02 17:04:41 CEST 2026, lastUpdateTimeNanos=244415803478750}
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017] INFO org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017, type=REPLICA_SET_PRIMARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=317179542, minRoundTripTimeNanos=0, setName='atlas-7cozd2-shard-0', canonicalAddress=ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017, hosts=[ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017, ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017, ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017], passives=[], arbiters=[], primary='ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='euw3-az2'}, Tag{name='cacheState', value='READY'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='EU_WEST_3'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=7fffffff0000000000000070, setVersion=42, topologyVersion=TopologyVersion{processId=6a11e12b9c8118123d37d1af, counter=6}, lastWriteDate=Tue Jun 02 17:04:41 CEST 2026, lastUpdateTimeNanos=244415803450875}
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017] INFO org.mongodb.driver.cluster - Monitor thread successfully connected to server with description ServerDescription{address=ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017, type=REPLICA_SET_SECONDARY, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=25, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=322389791, minRoundTripTimeNanos=0, setName='atlas-7cozd2-shard-0', canonicalAddress=ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017, hosts=[ac-yinol0j-shard-00-00.evvnhth.mongodb.net:27017, ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017, ac-yinol0j-shard-00-02.evvnhth.mongodb.net:27017], passives=[], arbiters=[], primary='ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017', tagSet=TagSet{[Tag{name='availabilityZone', value='euw3-az3'}, Tag{name='cacheState', value='READY'}, Tag{name='diskState', value='READY'}, Tag{name='nodeType', value='ELECTABLE'}, Tag{name='provider', value='AWS'}, Tag{name='region', value='EU_WEST_3'}, Tag{name='workloadType', value='OPERATIONAL'}]}, electionId=null, setVersion=42, topologyVersion=TopologyVersion{processId=6a11e2ac1245c66fa5f65289, counter=3}, lastWriteDate=Tue Jun 02 17:04:41 CEST 2026, lastUpdateTimeNanos=244415803439708}
+  [cluster-ClusterId{value='6a1ef1094e5a0b197299d106', description='basedatosaaron'}-ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017] INFO org.mongodb.driver.cluster - Discovered replica set primary ac-yinol0j-shard-00-01.evvnhth.mongodb.net:27017 with max election id 7fffffff0000000000000070 and max set version 42
+  ```
+- **Evidencia de MongoDB:**
+  - Inserción: al crear una reseña se ejecuta collection.insertOne en ResenaDAOMongo.guardar.
+  - Consulta: collection.find() y find(eq("reservaId", ...)).
+  - Borrado: collection.deleteOne(eq("reservaId", ...)).
+  - Ejemplo de MongoDB Atlas:
+  ```json
+  {
+  "_id": {
+  "$oid": "6a1dad399afe196779e84196"
+  },
+  "reservaId": 3,
+  "nota": 3.5,
+  "descripcion": "Muy bien pero la pista tenia zonas donde el parqué no estaba del todo bien puesto.",
+  "createdAt": {
+  "$numberLong": "1780329785881"
+  }
+  }
+  ```
+- **Evidencia de SQL:**
+  - Insert: INSERT INTO reservas (id_pista, fecha, turno, usuario) VALUES (?, ?, ?, ?) en ReservaDAOH2.guardar.
+  - Select: SELECT * FROM reservas WHERE id_pista = ? AND fecha = ?, SELECT * FROM reservas WHERE id = ?, SELECT * FROM pistas ORDER BY id.
+  - Delete: DELETE FROM reservas WHERE id = ?.
 
 ## 7. Refactorización, documentación y Git
 
-- **Refactorizaciones aplicadas:** <!-- Qué se mejoró y por qué -->
-- **Código limpio:** <!-- Ejemplos concretos -->
-- **Documentación:** <!-- KDoc, Dokka, README, diagramas... -->
-- **Control de versiones:** <!-- Commits, ramas, conflictos si los hubo -->
+- **Refactorizaciones aplicadas:**
+  Validación del nombre de usuario con expresión regular
+  - Qué se mejoró: el método preguntarNombre() de MenuTerminal solo comprobaba que el nombre no estuviera vacío, lo que era una validación muy débil (permitía "   ", números, símbolos, etc.).
+  - Por qué: para cumplir con el requisito de “expresiones regulares” y para asegurar una entrada de datos coherente y presentable.
+  - Cómo: se extrajo la validación a una función pública esNombreValido(nombre: String): Boolean en MenuTerminal que aplica la regex ^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$ junto con la restricción de longitud 2..30.
+  - Beneficios:
+  - Regla de validación centralizada y reutilizable.
+  - Mensaje de error claro al usuario.
+  - Posibilidad de testear la función directamente con Kotest (MenuTerminalRegexTest).
+- **Código limpio:**
+  - Nombres descriptivos en clases y métodos: PabellonService.hacerReserva, eliminarReservaFuturaPorId, obtenerReservasPasadasSinResena dejan claro qué hacen sin necesidad de leer la implementación.
+  - Funciones con responsabilidad única: por ejemplo, MenuTerminal solo se encarga de UI (preguntas, impresión, menús), PabellonService solo reglas de negocio y DAOs solo acceso a datos.
+  - Eliminación de duplicación al eliminar reservas pasadas:
+    - eliminarReservaPorId en PabellonService reutiliza reservaDAO.obtenerPorId(id) para validar existencia, evitando recorrer la lista dos veces.
+  - Ordenación coherente: obtenerReservasFuturas y obtenerReservasPasadas ordenan por fecha real, pista y turno (parseando el formato dd-MM-uuuu) en lugar de por orden textual, que no sería cronológico.
+  - Validación aislada en esNombreValido: la regla del nombre está separada de la lectura por consola, evitando if anidados en el bucle de preguntarNombre().
+- **Documentación:**
+  - Se realiza documentación mediante KDoc:
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/e8cdfe5351eed1195aeb24babb89726e39ea7b83/src/main/kotlin/service/PabellonService.kt#L83-L92
+  - Enlace al README donde se explica el codigo del programa: [README_CODIGO.md](README_CODIGO.md)
+- **Control de versiones:**
+  - He realizado varios commits a medida que iba avanzando el proyecto, pero siempre en la misma rama.
 
 ## 8. Problemas encontrados y soluciones
 
