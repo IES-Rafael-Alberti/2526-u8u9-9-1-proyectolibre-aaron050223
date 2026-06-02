@@ -6,8 +6,18 @@ import org.iesra.dao.ReservaDAO
 import org.iesra.model.Reserva
 import java.sql.SQLException
 
+/**
+ * Implementacion H2 de [ReservaDAO].
+ *
+ * Usa `PreparedStatement` (consultas parametrizadas) y `use { ... }`
+ * para cerrar automaticamente la conexion, el statement y el result set.
+ */
 class ReservaDAOH2 : ReservaDAO {
 
+    /**
+     * Inserta una nueva reserva. El `id` se genera en H2 (autoincrement),
+     * por lo que se ignora el `id` del `Reserva` recibido.
+     */
     override fun guardar(reserva: Reserva) {
         val sql = "INSERT INTO reservas (id_pista, fecha, turno, usuario) VALUES (?, ?, ?, ?)"
 
@@ -28,6 +38,10 @@ class ReservaDAOH2 : ReservaDAO {
         }
     }
 
+    /**
+     * Devuelve las reservas de una pista concreta en una fecha concreta.
+     * Usado para detectar turnos ocupados al crear una nueva reserva.
+     */
     override fun buscarPorPistaYFecha(idPista: Int, fecha: String): List<Reserva> {
         val sql = "SELECT * FROM reservas WHERE id_pista = ? AND fecha = ?"
         val listaReservas = mutableListOf<Reserva>()
@@ -60,6 +74,7 @@ class ReservaDAOH2 : ReservaDAO {
         return listaReservas
     }
 
+    /** Devuelve todas las reservas ordenadas por fecha, pista y turno. */
     override fun obtenerTodas(): List<Reserva> {
         val sql = "SELECT * FROM reservas ORDER BY fecha, id_pista, turno"
         val listaReservas = mutableListOf<Reserva>()
@@ -89,6 +104,7 @@ class ReservaDAOH2 : ReservaDAO {
         return listaReservas
     }
 
+    /** Devuelve la reserva con el id indicado, o `null` si no existe. */
     override fun obtenerPorId(id: Int): Reserva? {
         val sql = "SELECT * FROM reservas WHERE id = ?"
 
@@ -118,6 +134,7 @@ class ReservaDAOH2 : ReservaDAO {
         return null
     }
 
+    /** Elimina la reserva con el id indicado. */
     override fun eliminarPorId(id: Int) {
         val sql = "DELETE FROM reservas WHERE id = ?"
 

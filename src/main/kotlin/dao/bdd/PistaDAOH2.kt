@@ -5,7 +5,15 @@ import org.iesra.dao.PistaDAO
 import org.iesra.model.Pista
 import java.sql.SQLException
 
+/**
+ * Implementacion H2 de [PistaDAO].
+ *
+ * Lee el catalogo de pistas que se inicializa en [DatabaseManager]
+ * (tabla `pistas`).
+ */
 class PistaDAOH2 : PistaDAO {
+
+    /** Devuelve todas las pistas ordenadas por `id`. */
     override fun obtenerTodas(): List<Pista> {
         val sql = "SELECT * FROM pistas ORDER BY id"
         val pistas = mutableListOf<Pista>()
@@ -33,6 +41,7 @@ class PistaDAOH2 : PistaDAO {
         return pistas
     }
 
+    /** Devuelve la pista con el id indicado, o `null` si no existe. */
     override fun obtenerPorId(id: Int): Pista? {
         val sql = "SELECT * FROM pistas WHERE id = ?"
 

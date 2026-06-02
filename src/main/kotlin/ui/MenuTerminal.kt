@@ -7,10 +7,20 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.format.ResolverStyle
 
+/**
+ * Interfaz de usuario por consola.
+ *
+ * Muestra los menus, valida la entrada del usuario y delega toda
+ * la logica de negocio en [PabellonService].
+ *
+ * No contiene reglas de negocio: solo entrada/salida y presentacion.
+ */
 class MenuTerminal(private val servicio: PabellonService) {
 
+    /** Mapa `idPista -> deporte` cargado desde la BBDD al construir. */
     private val nombresDeportes = servicio.obtenerMapaPistas()
 
+    /** Mapa `turno -> franja horaria`. */
     private val horariosTurnos = mapOf(
         1 to "09:00 - 10:30", 2 to "10:30 - 12:00", 3 to "12:00 - 13:30", 4 to "13:30 - 15:00",
         5 to "15:00 - 16:30", 6 to "16:30 - 18:00", 7 to "18:00 - 19:30", 8 to "19:30 - 21:00"
@@ -22,13 +32,25 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
-    /** Valida el nombre de usuario: solo letras/espacios, sin espacios al inicio/final, longitud 2..30. */
+    /**
+     * Valida el nombre de usuario con regex.
+     *
+     * Reglas:
+     *  - longitud entre 2 y 30 caracteres.
+     *  - solo letras (incluye tildes y `ñ`) y espacios entre palabras.
+     *  - sin espacios al inicio/final ni espacios dobles.
+     *
+     * @return `true` si el nombre cumple las reglas, `false` en caso contrario.
+     */
     fun esNombreValido(nombre: String): Boolean {
         val regex = Regex("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$")
         return nombre.length in 2..30 && regex.matches(nombre)
     }
 
-    /** @return true si el programa debe seguir, false si el usuario decidio salir. */
+    /**
+     * Arranca el menu principal.
+     * @return `true` si el programa debe seguir, `false` si el usuario decidio salir.
+     */
     fun iniciarFlujoReserva(): Boolean {
         var bucle = true
         while (bucle) {
@@ -52,6 +74,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return true
     }
 
+    /** Lee la opcion del menu principal (1..5), repitiendo hasta que sea valida. */
     private fun preguntarOpcionMenu(): Int {
         var bucle = true
         var opcion = 0
@@ -76,6 +99,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return opcion
     }
 
+    /** Bucle del submenu de reseñas. */
     private fun flujoResenas() {
         var bucle = true
         while (bucle) {
@@ -93,6 +117,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Lee la opcion del submenu de reseñas (1..4). */
     private fun preguntarOpcionResenas(): Int {
         var bucle = true
         var opcion = 0
@@ -116,6 +141,13 @@ class MenuTerminal(private val servicio: PabellonService) {
         return opcion
     }
 
+    /**
+     * Flujo "Hacer reseña":
+     *  1. Lista reservas pasadas sin reseña.
+     *  2. Pide el id de la reserva.
+     *  3. Pide nota (1..5) y descripcion (1..100).
+     *  4. Llama a [PabellonService.crearResena] y muestra el resultado.
+     */
     private fun flujoCrearResena() {
         val reservas = servicio.obtenerReservasPasadasSinResena()
         if (reservas.isEmpty()) {
@@ -147,6 +179,10 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /**
+     * Flujo "Ver reseñas": lista todas las reseñas y, si encuentra la
+     * reserva asociada, muestra deporte/fecha/turno/usuario.
+     */
     private fun flujoVerResenas() {
         val resenas = servicio.obtenerResenas()
         if (resenas.isEmpty()) {
@@ -171,6 +207,10 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /**
+     * Flujo "Eliminar reseña": muestra las reseñas, pide el `reservaId`
+     * y llama a [PabellonService.eliminarResenaPorReservaId].
+     */
     private fun flujoEliminarResena() {
         val resenas = servicio.obtenerResenas()
         if (resenas.isEmpty()) {
@@ -190,6 +230,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Pide un id de reserva (positivo). `0` indica "volver". */
     private fun preguntarIdReservaResena(): Int? {
         var bucle = true
         var id: Int? = null
@@ -214,6 +255,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return id
     }
 
+    /** Pide una nota entre 1 y 5 (acepta coma o punto). `0` para volver. */
     private fun preguntarNotaResena(): Double? {
         var bucle = true
         var nota: Double? = null
@@ -236,6 +278,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return nota
     }
 
+    /** Pide una descripcion de 1..100 caracteres. `0` para volver. */
     private fun preguntarDescripcionResena(): String? {
         var bucle = true
         var descripcion: String? = null
@@ -257,6 +300,12 @@ class MenuTerminal(private val servicio: PabellonService) {
         return descripcion
     }
 
+    /**
+     * Flujo "Hacer reserva":
+     *  1. Pide deporte/pista, fecha, turno y nombre.
+     *  2. Muestra disponibilidad para esa pista y fecha.
+     *  3. Llama a [PabellonService.hacerReserva].
+     */
     private fun flujoHacerReserva() {
         val idPista = preguntarDeporte() ?: return
 
@@ -273,6 +322,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Pide el id de una pista de las existentes (cargadas de la BBDD). `0` para volver. */
     private fun preguntarDeporte(): Int? {
         var bucle = true
         var idPista: Int? = null
@@ -302,6 +352,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return idPista
     }
 
+    /** Flujo "Eliminar reserva": lista reservas futuras y permite borrar una por id. */
     private fun flujoEliminarReserva() {
         val reservas = servicio.obtenerReservasFuturas()
         if (reservas.isEmpty()) {
@@ -320,6 +371,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Pide un id de reserva positivo. `0` para volver. */
     private fun preguntarIdReserva(): Int? {
         var bucle = true
         var id: Int? = null
@@ -344,6 +396,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return id
     }
 
+    /** Muestra las reservas futuras en una tabla resumen. */
     private fun mostrarTodasLasReservas() {
         val reservas = servicio.obtenerReservasFuturas()
         if (reservas.isEmpty()) {
@@ -359,6 +412,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Pide una fecha en formato `dd-MM-uuuu`, validando formato y que no sea pasada. */
     private fun preguntarFecha(): String {
         val formatter = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
         var bucle = true
@@ -382,6 +436,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return fecha
     }
 
+    /** Muestra para cada turno (1..8) si esta libre o reservado. */
     private fun mostrarDisponibilidad(idPista: Int, fecha: String) {
         println("\n--- DISPONIBILIDAD PARA EL DÍA $fecha ---")
         val turnosOcupados = servicio.obtenerTurnosOcupados(idPista, fecha)
@@ -392,6 +447,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Pide un numero de turno valido (1..8). */
     private fun preguntarTurno(): Int {
         var bucle = true
         var turno = 0
@@ -410,6 +466,7 @@ class MenuTerminal(private val servicio: PabellonService) {
         return turno
     }
 
+    /** Pide un nombre de usuario validado con [esNombreValido]. */
     private fun preguntarNombre(): String {
         var bucle = true
         var nombre = ""

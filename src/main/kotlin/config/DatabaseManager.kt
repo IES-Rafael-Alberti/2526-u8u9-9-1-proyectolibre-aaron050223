@@ -4,6 +4,16 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
 
+/**
+ * Gestiona la conexion y la inicializacion del esquema H2 local.
+ *
+ * La BBDD se almacena como fichero en `./db/pabellon` y se crean
+ * dos tablas relacionadas:
+ *  - `pistas` (diccionario de deportes)
+ *  - `reservas` (con FK a `pistas.id`)
+ *
+ * Tambien siembra los 4 deportes iniciales.
+ */
 class DatabaseManager {
     /** URL JDBC de la base de datos H2 en fichero local. */
     private val URL = "jdbc:h2:./db/pabellon"
@@ -15,7 +25,15 @@ class DatabaseManager {
         return DriverManager.getConnection(URL, USER, PASSWORD)
     }
 
-    /** Inicializa el esquema necesario para la aplicacion. */
+    /**
+     * Inicializa el esquema necesario para la aplicacion.
+     *
+     * Crea la tabla `pistas` con sus 4 filas iniciales, y la tabla
+     * `reservas` con FK a `pistas(id)`. Es idempotente (usa
+     * `CREATE TABLE IF NOT EXISTS` y `MERGE`).
+     *
+     * Si el script se cambia, mantener sincronizado con `sql/schema.sql`.
+     */
     fun inicializarBBDD() {
         // Script equivalente en el repo: sql/schema.sql
         val sqlCrearPistas = """
