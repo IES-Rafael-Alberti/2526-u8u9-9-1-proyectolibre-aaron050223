@@ -1,70 +1,144 @@
 # Solución del proyecto
 
 - **Proyecto:** <!-- Nombre del proyecto -->
-- **Alumno/a:** <!-- Nombre y apellidos -->
-- **Repositorio:** <!-- URL del repositorio -->
+- **Alumno/a:**  Aarón Gallardo Canto
+- **Repositorio:** https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223
 
 ## 1. Resumen del proyecto
 
-- **Problema que resuelve:** <!-- Explicación breve -->
-- **Usuarios principales:** <!-- A quién va dirigido -->
-- **Funcionalidades principales:** <!-- Lista breve -->
-- **Entidades principales:** <!-- Clases o conceptos del dominio -->
-- **Estructura del proyecto:** <!-- Paquetes principales y responsabilidad -->
+- **Problema que resuelve:** Programa para gestionar la reserva y reseñas de las pistas deportivdas de un pabellón.
+- **Usuarios principales:** Público general que busca reservar una pista para jugar a cualquiera de los deportes disponibles y, si lo deseara, realizar alguna reseña para favorecer a la mejora de las instalaciones.
+- **Funcionalidades principales:**
+  - Realizar / eliminar / ver reservas.
+  - Realizar / eliminar / ver reseñas.
+- **Entidades principales:** 
+  - Reserva: una reserva de pista para una fecha, turno y usuario.
+  - Pista: catálogo/diccionario de pistas (id + deporte) usado por las reservas.
+  - Reseña (Resena): valoración (nota + descripción) asociada a una reserva pasada. 
+- **Estructura del proyecto:**
+  - raíz: punto de entrada de la aplicación (Main.kt), configura logs, inicializa MongoDB/H2 y lanza el menú.
+  - ui: interfaz de usuario por consola (MenuTerminal), menús y validación de entrada.
+  - service: lógica de negocio (PabellonService), reglas y coordinación entre persistencias.
+  - model: entidades del dominio (Reserva, Pista, Resena).
+  - dao: interfaces DAO (contratos) para acceso a datos (ReservaDAO, PistaDAO, ResenaDAO).
+  - dao.bdd: implementación SQL/H2 de DAOs (ReservaDAOH2, PistaDAOH2).
+  - dao.mongo: implementación MongoDB Atlas (ResenaDAOMongo).
+  - dao.memory: implementación en memoria para pruebas (ReservaDAOMemory).
+  - config: configuración e inicialización de la base de datos H2 (DatabaseManager).
 
 ## 2. Instalación y ejecución
 
-```bash
-# Comandos necesarios para ejecutar el proyecto
-./gradlew run
-```
-
-- **Requisitos previos:** <!-- JDK, MongoDB, SGBD, variables de entorno -->
-- **Configuración necesaria:** <!-- Ficheros, puertos, datos de prueba -->
-- **Datos de prueba incluidos:** <!-- Dónde están y cómo se usan -->
+- **Requisitos previos:**
+  - JDK 21.
+  - Conexión a Internet para acceder a MongoDB Atlas.
+  - Un clúster de MongoDB Atlas.
+- **Configuración necesaria:**
+  - Configurar la URI de MongoDB Atlas en src/main/kotlin/Main.kt (variable mongoUri).
+  - La BD relacional es H2 en fichero local (jdbc:h2:./db/pabellon): se crea automáticamente al ejecutar.
+  - La app crea/usa:
+    - Carpeta db/ para H2.
+    - Carpeta logs/ y fichero logs/mongo.log para logs de Mongo.
+    - En Atlas: BD pabellon y colección resenas.
+- **Datos de prueba incluidos:**
+  - En H2 se cargan automáticamente las pistas iniciales (pistas: 1 Fútbol, 2 Baloncesto, 3 Pádel, 4 Fútbol Sala).
 
 ## 3. Diseño y modelo
 
-- **Clases principales:** <!-- Clase -> responsabilidad -->
-- **Relaciones importantes:** <!-- Herencia, interfaces, composición -->
-- **Genéricos usados:** <!-- Clase/interfaz/función y motivo -->
-- **Colecciones usadas:** <!-- Tipo, uso y justificación -->
-- **Principios SOLID aplicados:** <!-- Al menos dos, con enlace al código -->
-- **Patrones de diseño:** <!-- Patrón, problema que resuelve y enlace -->
+- **Clases principales:**
+  - MenuTerminal (src/main/kotlin/ui/MenuTerminal.kt) -> Interfaz por consola: menús, entradas y mostrar listados.
+  - PabellonService (src/main/kotlin/service/PabellonService.kt) -> Lógica de negocio: valida reglas (no duplicar turnos, reseñas solo de reservas pasadas, rangos de nota/descripcion).
+  - DatabaseManager (src/main/kotlin/config/DatabaseManager.kt) -> Configura y crea las tablas en H2.
+  - ReservaDAOH2 / PistaDAOH2 (src/main/kotlin/dao/bdd/*) -> Acceso H2 para reservas y pistas.
+  - ResenaDAOMongo (src/main/kotlin/dao/mongo/ResenaDAOMongo.kt) -> Acceso a MongoDB Atlas para reseñas.
+  - Modelos: Reserva, Pista, Resena (src/main/kotlin/model/*).
+- **Relaciones importantes:**
+  - Interfaces + polimorfismo (DAO):
+    - ReservaDAO, PistaDAO, ResenaDAO (interfaces) con implementaciones concretas en dao/bdd, dao/mongo, dao/memory.
+  - Composición / inyección de dependencias:
+    - MenuTerminal contiene un PabellonService.
+    - PabellonService contiene ReservaDAO, PistaDAO, ResenaDAO.
+- **Colecciones usadas:**
+  - List:
+    - Para listados de reservas/pistas/reseñas (DAOs devuelven listas).
+  - Map:
+    - MenuTerminal: horariosTurnos: Map<Int, String> para mostrar los turnos.
+    - PabellonService.obtenerMapaPistas(): Map<Int, String> para traducir idPista -> deporte desde la tabla pistas.
+  - Set:
+    - En PabellonService.obtenerReservasPasadasSinResena(): Set<Int> con reservaId ya reseñadas para filtrar.
+- **Principios SOLID aplicados:**
+  - SRP (Single Responsibility Principle):
+    - MenuTerminal solo gestiona UI/entrada-salida.
+    - PabellonService concentra reglas de negocio.
+    - DAOs se encargan solo de persistencia.
+  - DIP (Dependency Inversion Principle):
+    - PabellonService depende de interfaces (ReservaDAO, PistaDAO, ResenaDAO) y no de implementaciones concretas; permite cambiar H2/Mongo/memoria sin reescribir la lógica.
+- **Patrones de diseño:**
+  - DAO (Data Access Object):
+    - ReservaDAO/PistaDAO/ResenaDAO separan el acceso a datos de la lógica de negocio.
+  - Arquitectura por capas (UI -> Service -> DAO/Model):
 
 ## 4. Persistencia
 
 ### Ficheros
 
-- **Ficheros usados:** <!-- Nombre y ruta -->
-- **Formato y contenido:** <!-- CSV, JSON, TXT... -->
-- **Lectura/escritura:** <!-- Qué operaciones realiza -->
-- **Clase responsable:** <!-- Enlace al código -->
-- **Errores controlados:** <!-- Qué ocurre si falla -->
+- **Ficheros usados:**
+  - logs/mongo.log (ruta: ./logs/mongo.log)
+- **Formato y contenido:**
+  - Texto plano (.log), líneas de log generadas por el driver de MongoDB.
+- **Lectura/escritura:**
+  - Escritura: se vuelcan los logs del driver a ese fichero para evitar que salgan por terminal.
+- **Clase responsable:**
+  - Main.kt (src/main/kotlin/Main.kt), crea la carpeta logs/ con File("logs").mkdirs()
+  - https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/3530076bb32a32d640f8ddbbda48e1ae1186c1ae/src/main/kotlin/Main.kt#L15-L17
+- **Errores controlados:**
+  - Si no se puede crear la carpeta o escribir el fichero, el programa puede seguir funcionando.
 
 ### MongoDB
 
-- **Base de datos:** <!-- Nombre -->
-- **Colecciones:** <!-- Nombre y uso -->
+- **Base de datos:** pabellon
+- **Colecciones:**
+  - resenas: almacena las reseñas asociadas a reservas pasadas (1 reseña por reserva, asegurado con índice único en reservaId).
 - **Documento de ejemplo:**
 
 ```json
 {
-  "campo": "valor"
+  "_id": {
+    "$oid": "6a1dad399afe196779e84196"
+  },
+  "reservaId": 3,
+  "nota": 3.5,
+  "descripcion": "Muy bien pero la pista tenia zonas donde el parqué no estaba del todo bien puesto.",
+  "createdAt": {
+    "$numberLong": "1780329785881"
+  }
 }
 ```
 
-- **Operaciones realizadas:** <!-- Insertar, consultar, modificar, borrar -->
-- **Clase responsable:** <!-- Enlace al código -->
+- **Operaciones realizadas:**
+  - Insertar: crear reseña.
+  - Consultar: listar reseñas / buscar por reservaId.
+  - Borrar: eliminar reseña por reservaId.
+- **Clase responsable:**
+  - ResenaDAOMongo (src/main/kotlin/dao/mongo/ResenaDAOMongo.kt)
+    https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/3530076bb32a32d640f8ddbbda48e1ae1186c1ae/src/main/kotlin/dao/mongo/ResenaDAOMongo.kt#L13-L61
 
 ### Base de datos relacional
 
-- **SGBD utilizado:** <!-- H2, SQLite, MySQL... -->
-- **Script SQL:** <!-- Ruta del script -->
-- **Tablas y relaciones:** <!-- Resumen -->
-- **Operaciones CRUD:** <!-- Qué entidades cubren -->
-- **Consultas parametrizadas:** <!-- Enlace a ejemplo en código -->
-- **Gestión de conexión y cierre:** <!-- Enlace al código -->
+- **SGBD utilizado:** H2
+- **Tablas y relaciones:** 
+  - pistas(id, deporte)
+  - reservas(id, id_pista, fecha, turno, usuario)
+  - Relación: reservas.id_pista referencia a pistas.id
+- **Operaciones CRUD:**
+  - Create
+  - Read
+  - Delete
+- **Consultas parametrizadas:**
+  - ReservaDAOH2.buscarPorPistaYFecha (WHERE id_pista = ? AND fecha = ?)
+    https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/3530076bb32a32d640f8ddbbda48e1ae1186c1ae/src/main/kotlin/dao/bdd/ReservaDAOH2.kt#L31-L61
+- **Gestión de conexión y cierre:**
+  - En DatabaseManager se usa `use{}` para cerrar automáticamente.
+    https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/3530076bb32a32d640f8ddbbda48e1ae1186c1ae/src/main/kotlin/config/DatabaseManager.kt#L51-L57
 
 ## 5. Validaciones y errores
 
