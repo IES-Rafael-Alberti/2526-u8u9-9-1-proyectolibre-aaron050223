@@ -22,6 +22,12 @@ class MenuTerminal(private val servicio: PabellonService) {
         }
     }
 
+    /** Valida el nombre de usuario: solo letras/espacios, sin espacios al inicio/final, longitud 2..30. */
+    fun esNombreValido(nombre: String): Boolean {
+        val regex = Regex("^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$")
+        return nombre.length in 2..30 && regex.matches(nombre)
+    }
+
     /** @return true si el programa debe seguir, false si el usuario decidio salir. */
     fun iniciarFlujoReserva(): Boolean {
         var bucle = true
@@ -411,11 +417,11 @@ class MenuTerminal(private val servicio: PabellonService) {
             print("\nIntroduce el nombre de la persona que reserva: ")
             val input = readln().trim()
 
-            if (input.isNotEmpty()) {
+            if (esNombreValido(input)) {
                 nombre = input
                 bucle = false
             } else {
-                println("❌ Error: El nombre no puede estar vacío.")
+                println("❌ Nombre no válido. Solo letras y espacios (2..30), sin espacios al inicio/final.")
             }
         }
 

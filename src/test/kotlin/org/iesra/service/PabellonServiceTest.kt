@@ -8,6 +8,7 @@ import org.iesra.dao.ResenaDAO
 import org.iesra.dao.memory.ReservaDAOMemory
 import org.iesra.model.Pista
 import org.iesra.model.Resena
+import org.iesra.ui.MenuTerminal
 import java.time.LocalDate
 
 class PabellonServiceTest : StringSpec({
@@ -164,6 +165,35 @@ class PabellonServiceTest : StringSpec({
         servicio.crearResena(idReserva, 4.0, "Ok", hoy) shouldBe true
         servicio.eliminarResenaPorReservaId(idReserva) shouldBe true
         servicio.eliminarResenaPorReservaId(idReserva) shouldBe false
+    }
+})
+
+class MenuTerminalRegexTest : StringSpec({
+
+    val (servicio, _, _) = Triple(
+        PabellonService(
+            ReservaDAOMemory(),
+            FakePistaDAO(listOf(Pista(1, "Futbol"))),
+            FakeResenaDAO()
+        ),
+        null as ReservaDAOMemory?,
+        null as FakeResenaDAO?
+    )
+
+    val ui = MenuTerminal(servicio)
+
+    "esNombreValido debe aceptar nombres simples y compuestos" {
+        ui.esNombreValido("Ana") shouldBe true
+        ui.esNombreValido("Maria Lopez") shouldBe true
+        ui.esNombreValido("Ñoño") shouldBe true
+    }
+
+    "esNombreValido debe rechazar numeros, vacios y espacios al inicio/final" {
+        ui.esNombreValido("") shouldBe false
+        ui.esNombreValido("Ana123") shouldBe false
+        ui.esNombreValido(" Ana") shouldBe false
+        ui.esNombreValido("Ana ") shouldBe false
+        ui.esNombreValido("A") shouldBe false
     }
 })
 
