@@ -32,7 +32,7 @@ fun main() {
     val databaseManager = DatabaseManager()
     databaseManager.inicializarBBDD()
 
-    val mongoUri = databaseManager.leerConexionMongo("./uriMongo/uriMongo.txt")
+    val mongoUri = databaseManager.leerConexionMongo("./uriMongo/uriMongo.txt") ?: return
 
     val mongoClient: MongoClient = MongoClients.create(ConnectionString(mongoUri))
     val mongoDatabase = mongoClient.getDatabase("pabellon")
