@@ -87,6 +87,7 @@
   - Texto plano (.log), líneas de log generadas por el driver de MongoDB.
 - **Lectura/escritura:**
   - Escritura: se vuelcan los logs del driver a ese fichero para evitar que salgan por terminal.
+  - Lectura: se obtiene la URI de MongoDB para no tenerla en el Main.
 - **Clase responsable:**
   - Main.kt (src/main/kotlin/Main.kt), crea la carpeta logs/ con File("logs").mkdirs()
   - https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/3530076bb32a32d640f8ddbbda48e1ae1186c1ae/src/main/kotlin/Main.kt#L15-L17
@@ -236,91 +237,172 @@
 
 ## 8. Problemas encontrados y soluciones
 
-| Problema | Solución aplicada | Enlace o evidencia |
-|----------|-------------------|--------------------|
-| <!-- Problema --> | <!-- Solución --> | <!-- Enlace --> |
-
-## 9. Respuestas a los criterios de evaluación
-
-Completa cada criterio con una respuesta breve (Por ejemplo, si habla de clases puedes listar las mas importantes, y entrar en detalle en alguna), técnica y con enlaces al código.
+| Problema                 | Solución aplicada                    | Enlace o evidencia                                                                                                                                                                       |
+|--------------------------|--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Tenía la URI hardcodeada | obtener la URI desde un fichero .txt | [Enlace](https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/1f0254c3aa9e104b8c9cceb59b30a3bbac85b20c/src/main/kotlin/config/DatabaseManager.kt#L88-L102) |
 
 ### 9.1. Diseño general
 
-<!-- Temática, problema, entidades, funcionalidades, estructura y justificación. -->
+- **Temática:** programa para gestionar la reserva y reseñas de las pistas deportivdas de un pabellón.
+- **Problema:** permitir a usuarios reservar pistas por fecha/turno y dejar reseña tras usarlas.
+- **Entidades principales:** `Reserva`, `Pista`, `Resena` en `src/main/kotlin/model/`.
+- **Funcionalidades principales:** 
+  - Crear/eliminar/ver reservas.
+  - Hacer/ver/eliminar reseñas.
+- **Estructura del proyecto:** se organiza en capas por responsabilidad (UI, service, dao, model, config) para separar UI de lógica de negocio.
+- **Justificación:** la separación por capas permite testear la lógica con DAOs en memoria y cambiar la persistencia sin tocar el resto.
 
 ### 9.2. Clases y objetos
 
-<!-- Clases, propiedades, métodos, constructores, objetos instanciados y enlaces al código. -->
+- **Clases principales:**
+  - `MenuTerminal` (interfaz por consola) en `src/main/kotlin/ui/MenuTerminal.kt`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/ui/MenuTerminal.kt#L10-L487
+  - `PabellonService` (lógica de negocio) en `src/main/kotlin/service/PabellonService.kt`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/service/PabellonService.kt#L14-L175
+  - `DatabaseManager` (configuración H2) en `src/main/kotlin/config/DatabaseManager.kt`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/config/DatabaseManager.kt#L9-L103
+  - DAOs: `ReservaDAOH2`, `PistaDAOH2` en `src/main/kotlin/dao/bdd/`; `ResenaDAOMongo` en `src/main/kotlin/dao/mongo/`; `ReservaDAOMemory` en `src/main/kotlin/dao/memory/`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/dao/bdd/ReservaDAOH2.kt#L9-L148
+- **Data classes:** `Reserva`, `Pista`, `Resena` en `src/main/kotlin/model/`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/model/Reserva.kt#L3-L20
+- **Constructores destacados:** `PabellonService(reservaDAO, pistaDAO, resenaDAO)` (inyección de dependencias); `ReservaDAOMemory` genera `id` incremental.
+- **Objetos instanciados:** se crean en `Main.kt` y se inyectan en `PabellonService` y `MenuTerminal`.
 
 ### 9.3. Encapsulación y visibilidad
 
-<!-- Propiedades públicas/privadas, validaciones, métodos de modificación y decisiones. -->
+- **Visibilidad:** los DAOs y el servicio exponen solo lo necesario, marcando el resto como `private` (por ejemplo, `private val reservaDAO` en `PabellonService`, `private val nombresDeportes` en `MenuTerminal`).
+- **Validacioón en la entrada del usuario:** (rangos, longitud, regex) en `MenuTerminal` (por ejemplo, `preguntarTurno`, `preguntarNombre` con `esNombreValido`).
+- **Decisiones:** las propiedades de las data classes son `val` (inmutables) para evitar estados inconsistentes, y se accede a ellas solo desde sus servicios.
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/service/PabellonService.kt#L26-L32
 
 ### 9.4. Colecciones
 
-<!-- Tipo de colección, información almacenada, motivo de elección y enlace al código. -->
+- **`List<Reserva>`** devuelto por los DAOs y usado en `PabellonService` para filtrar y ordenar.
+- **`Map<Int, String>`** en `MenuTerminal.horariosTurnos` (turno -> franja horaria) y en `PabellonService.obtenerMapaPistas()` (id pista -> deporte).
+- **`Set<Int>`** construido con `mapTo(mutableSetOf())` en `PabellonService.obtenerReservasPasadasSinResena()` para filtrar reservas ya reseñadas.
+- **Motivo:** colecciones inmutables o de lookup rápido según la necesidad (orden, traducción, pertenencia).
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/service/PabellonService.kt#L78-L81
 
 ### 9.5. Genéricos
 
-<!-- Elemento genérico creado, problema que resuelve, ventaja y enlace al código. -->
+- Actualmente no hay genéricos.
 
 ### 9.6. Herencia, interfaces o clases abstractas
 
-<!-- Relación entre clases/interfaces, ventaja, polimorfismo si existe y enlace al código. -->
+- **Interfaces DAO:** `ReservaDAO`, `PistaDAO`, `ResenaDAO` en `src/main/kotlin/dao/` definen el contrato.
+- **Implementaciones:** H2 (`ReservaDAOH2`, `PistaDAOH2`), MongoDB (`ResenaDAOMongo`) y memoria (`ReservaDAOMemory`).
+- **Polimorfismo:** `PabellonService` recibe los DAOs por interfaz, lo que permite sustituir H2 por memoria en tests sin tocar la lógica.
+- **Data classes del modelo** no usan herencia; la relación se modela con composición y FK (reservas -> pistas).
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/model/Reserva.kt#L3-L20
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/dao/ReservaDAO.kt#L5-L29
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/dao/bdd/ReservaDAOH2.kt#L9-L148
 
 ### 9.7. Expresiones regulares
 
-<!-- Dato validado, expresión regular, ejemplo válido, ejemplo no válido y enlace al código. -->
+- **Dato validado:** nombre de usuario (`usuario`) al hacer una reserva.
+- **Regex:** `^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$` (longitud 2..30 controlada aparte).
+- **Ejemplo válido:** `"Ana"`, `"Maria Lopez"`, `"Ñoño"`.
+- **Ejemplo no válido:** `""`, `"A"`, `"Ana123"`, `" Ana"`, `"Ana "`.
+- **Enlace:** `src/main/kotlin/ui/MenuTerminal.kt` (`esNombreValido` y `preguntarNombre`).
+- **Test:** `MenuTerminalRegexTest` en `src/test/kotlin/org/iesra/service/PabellonServiceTest.kt`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/5251f6aa3a215c5ae5004ab662828965f9149424/src/main/kotlin/ui/MenuTerminal.kt#L26-L29
+
 
 ### 9.8. Ficheros
 
-<!-- Ficheros, operaciones de lectura/escritura, formato, errores controlados y enlace al código. -->
+- **Fichero:** `logs/mongo.log` (escritura) y `uriMongo/uriMongo.txt` (lectura).
+- **Operación:** los logs del driver de MongoDB se vuelcan a fichero en lugar de a la terminal (escritura). Recoge la URI desde el fichero txt (lectura)
+- **Formato:** texto plano (`.log`) (escritura). formato en txt (lectura).
+- **Mecanismo:** `System.setProperty("org.slf4j.simpleLogger.logFile", "logs/mongo.log")` en `Main.kt` (escritura). Metodo `leerConexionMongo()` en `DatabaseManager` (lectura).
+- **Errores:** si no se puede crear la carpeta/archivo, los logs pueden no generarse correctamente (escritura). El programa se cierra automaticamente (lectura)
+- https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/Main.kt#L35
+- https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/Main.kt#L30
 
 ### 9.9. MongoDB
 
-<!-- Base de datos, colecciones, documentos, operaciones realizadas y enlace al código. -->
+- **Base de datos:** `pabellon`.
+- **Colección:** `resenas`.
+- **Documento de ejemplo:**
+
+  ```json
+  {
+    "_id": { "$oid": "6a1dad399afe196779e84196" },
+    "reservaId": 3,
+    "nota": 3.5,
+    "descripcion": "Muy bien pero la pista tenia zonas donde el parqué no estaba del todo bien puesto.",
+    "createdAt": { "$numberLong": "1780329785881" }
+  }
+  ```
+- **Operaciones:** insertar (`guardar`), consultar (`obtenerTodas`, `obtenerPorReservaId`), borrar (`eliminarPorReservaId`). Índice único sobre `reservaId` en `asegurarIndices()`.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/dao/mongo/ResenaDAOMongo.kt#L20-L89
 
 ### 9.10. Base de datos relacional
 
-<!-- SGBD, tablas, relaciones, script SQL, CRUD, conexión, cierre de recursos, consultas parametrizadas y enlace al código. -->
+- **SGBD:** H2 en fichero local (`jdbc:h2:./db/pabellon`).
+- **Tablas y relaciones:**
+  - `pistas(id PK, deporte)` (diccionario).
+  - `reservas(id PK, id_pista FK -> pistas.id, fecha, turno, usuario)`.
+- **CRUD:**
+  - `reservas`: insert, select, delete (no hay update).
+  - `pistas`: select (catálogo, no se modifica desde la app).
+- **Conexión y cierre:** `DatabaseManager.conexion()` y `use{}` en DAOs y `DatabaseManager`.
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/dao/bdd/ReservaDAOH2.kt#L15-L148
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/dao/bdd/PistaDAOH2.kt#L14-L69
 
 ### 9.11. Excepciones
 
-<!-- Errores controlados, excepciones propias, comportamiento ante error, ejemplos y enlace al código. -->
+- **Excepciones controladas:**
+  - `DateTimeParseException` en `MenuTerminal.preguntarFecha` (reintenta la entrada).
+  - `SQLException` en `DatabaseManager`, `ReservaDAOH2`, `PistaDAOH2` (se imprime por stderr y la app sigue).
+  - `MongoWriteException` en `ResenaDAOMongo.guardar` (se propaga; el servicio la traduce a `false` en `PabellonService.crearResena`).
+- **Excepciones propias:** actualmente no se han definido (`require` se usa como mecanismo estándar para precondiciones).
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/service/PabellonService.kt#L93-L109
 
 ### 9.12. SOLID y buenas prácticas
 
-<!-- Principios aplicados, clases donde aparecen, problema que evitan, mejora aportada y enlace al código. -->
+- **SRP (Single Responsibility):** `MenuTerminal` solo UI, `PabellonService` solo lógica, DAOs solo acceso a datos, `DatabaseManager` solo inicialización H2.
+- **DIP (Dependency Inversion):** `PabellonService` depende de interfaces (`ReservaDAO`, `PistaDAO`, `ResenaDAO`), no de implementaciones. Esto permite cambiar H2/Mongo por memoria en tests.
+![SRP.png](assets/SRP.png)
 
 ### 9.13. Librerías externas
 
-<!-- Nombre, finalidad, configuración, uso en código y motivo. -->
+- **H2 (`com.h2database:h2:2.2.224`)** -> BBDD relacional local; gestionada en `DatabaseManager` y DAOs H2.
+- **MongoDB Driver (`org.mongodb:mongodb-driver-sync:5.2.0`)** -> persistencia NoSQL de reseñas; gestionada en `ResenaDAOMongo` y `Main.kt`.
+- **SLF4J Simple (`org.slf4j:slf4j-simple:2.0.13`)** -> logger redirigido a fichero (`logs/mongo.log`); configurado en `Main.kt`.
+- **Kotest (`io.kotest:kotest-runner-junit5:5.9.1` y `io.kotest:kotest-assertions-core:5.9.1`)** -> tests automatizados.
+  https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/build.gradle.kts#L13-L21
 
 ### 9.14. Pruebas y evidencias
-
-<!-- Pruebas, datos, salidas, capturas si procede, ficheros generados, MongoDB y SQL. -->
+`PabellonServiceTest`: reservas (alta, duplicado de turno, turnos ocupados, futuras/pasadas, borrado restringido) y reseñas (validaciones, pasada, duplicado, eliminación).
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/test/kotlin/org/iesra/service/PabellonServiceTest.kt#L14-L223
 
 ### 9.15. Refactorización y código limpio
 
-<!-- Técnicas aplicadas, mejoras conseguidas, ejemplos y enlaces. -->
+`esNombreValido` como método para validar el nombre con regex, evitando un `if` anidado en el bucle de `preguntarNombre`.
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/5251f6aa3a215c5ae5004ab662828965f9149424/src/main/kotlin/ui/MenuTerminal.kt#L26-L29
 
 ### 9.16. Patrones de diseño
 
-<!-- Patrón aplicado, ubicación, problema que resuelve, ventaja y enlace al código. -->
+- **DAO (Data Access Object):** las interfaces `ReservaDAO`, `PistaDAO`, `ResenaDAO` separan el acceso a datos de la lógica. Implementaciones en `dao/bdd/` y `dao/mongo/`.
+- **Inyección de dependencias:** `PabellonService` recibe los DAOs por constructor; el "cableado" se hace en `Main.kt`. Facilita sustitución y testing.
+- **Arquitectura por capas (UI -> Service -> DAO/Model):** reduce el acoplamiento y permite evolucionar cada capa de forma independiente.
+![SRP.png](assets/SRP.png)
 
 ### 9.17. Documentación
 
-<!-- Herramientas, partes documentadas, formato, ejemplo y enlace. -->
+- **KDoc en el código:** todos los archivos tienen KDoc en la clase y en sus métodos.
+- **README del código:** `README_CODIGO.md` con explicación clase por clase y método por método, arquitectura, modelos, DAOs, servicio, UI y tests. ([README_CODIGO.md](README_CODIGO.md))
+https://github.com/IES-Rafael-Alberti/2526-u8u9-9-1-proyectolibre-aaron050223/blob/9c1e95e57860742ff3535adaa909149995e2b6cd/src/main/kotlin/model/Resena.kt#L3-L20
 
 ### 9.18. Control de versiones
 
-<!-- Git, commits, ramas, conflictos si existen, repositorio e historial. -->
+Uso de `Git` para subir al repositorio los cambios realiados en el programa. Uso exclusivo de commits y push. No hay "chekouts" entre ramas. 
 
 ## 10. Conclusiones
 
-- **Qué he aprendido:** <!-- Resumen -->
-- **Qué mejoraría si tuviera más tiempo:** <!-- Mejoras realistas -->
-- **Decisión técnica más importante:** <!-- Decisión y motivo -->
+- **Qué he aprendido:** He aprendido sobre todo a estructurar bien un proyecto. Al empezar no tenia nada claro en que paquetes añadir X fichero, pero al ir avanzando lo he ido viendo mas claro. Tambien me ha ayudado a ver cuando se usa cada tipo de BBDD (SQL y NoSQL).
+- **Qué mejoraría si tuviera más tiempo:** Si tuviera más tiempo mejoraría las partes que están gestionadas con BBDD. No creo que estén fatal pero pienso que rehaciendo de nuevo el proyecto y sabiendo algunos problemas que me he ido encontrando durante el proceso, lo hubiera llevado de otra forma. Por ejemplo, tuve que dedicar bastante tiempo al tema de las reseñas, ya que al principio mi programa eliminaba (de forma automática al comenzar) las reseñas que ya hayan ocurrido, por lo que solo se podían reseñar reservas que iban a tener lugar en un futuro, lo cual no tiene mucho sentido.
+- **Decisión técnica más importante:** Definitivamente, separar el proyecto en capas. Me ha ayudado a ver mas claro para que sirve cada clase y visualmente es más agradable y sencillo tener las cosas separadas por funcionalidades.
 
 ## 11. Autoevaluación
 
@@ -328,20 +410,20 @@ Indica en cada criterio el nivel o puntuación que consideras que has alcanzado.
 
 ### 11.1. Programación
 
-| Criterio | Puntuación/Nivel | Justificación de la puntuación |
-|----------|------------------|--------------------------------|
-| Completitud de requisitos mínimos | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Justifica el cumplimiento de POO, colecciones, genéricos, herencia/interfaces, regex, excepciones, SOLID, librerías, pruebas y evidencias. --> |
-| Acceso a ficheros | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Indica ficheros usados, formato, operaciones de lectura/escritura, clase responsable y control de errores. --> |
-| Integración de MongoDB | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Indica base de datos, colecciones, documentos, operaciones y clase responsable. --> |
-| Base de datos relacional y operaciones CRUD | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Indica SGBD, tablas, relaciones, script SQL, CRUD, conexión, cierre de recursos y consultas parametrizadas. --> |
-| Preguntas de evaluación de Programación | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Justifica si las respuestas de Programación están completas, son técnicas e incluyen enlaces y evidencias. --> |
+| Criterio | Puntuación/Nivel | Justificación de la puntuación                                                                                                 |
+|----------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| Completitud de requisitos mínimos | 7.5              | Hago uso de POO, colecciones, herencia/interfaces, regex, excepciones, SOLID, librerías y pruebas. La excepción son los genéricos |
+| Acceso a ficheros | 7.5              | Hago uso de ficheros para volvar los logs de MongoDB (escritura) y para obetener la uri de MongoDB (lectura)                   |
+| Integración de MongoDB | 7.5              | Hago uso de MongoDB Atlas, usando la BBDD `pabellon`, pero con un CRUD muy básico.                                             |
+| Base de datos relacional y operaciones CRUD | 7.5              | Hago uso de H2 en local con un CRUD básico.                                                                                    |
+| Preguntas de evaluación de Programación | 7.5              | Respuestas a las preguntas con enlaces que las verifican.                                                                      |
 
 ### 11.2. Entornos de Desarrollo
 
-| Criterio | Puntuación/Nivel | Justificación de la puntuación |
-|----------|------------------|--------------------------------|
-| Refactorización y código limpio | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Refactorizaciones, técnicas aplicadas, mejoras y ejemplos. --> |
-| Patrones de diseño | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Patrón usado, ubicación, problema resuelto y ventaja. --> |
-| Documentación | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Herramientas, partes documentadas, formato y ejemplo. --> |
-| Control de versiones | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Commits, ramas, repositorio, conflictos si existen e historial. --> |
-| Preguntas de evaluación de Entornos de Desarrollo | <!-- 0 / 2.5 / 5 / 7.5 / 10 --> | <!-- Justifica si las respuestas de Entornos están completas, son técnicas e incluyen enlaces y evidencias. --> |
+| Criterio | Puntuación/Nivel | Justificación de la puntuación                                                                                  |
+|----------|------------------|-----------------------------------------------------------------------------------------------------------------|
+| Refactorización y código limpio | 7.5              | Refactorizacion para implementar regex y obtención de URI por ficheros                                          |
+| Patrones de diseño | 7.5              | Hago uso de DAO y de architectura por capas.                                                                    |
+| Documentación | 7.5              | Comento con KDoc el código y realizo un README del programa                                                     |
+| Control de versiones | 5                | Uso muy básico de git (commit sin ramas) para subir el contenido.                                               |
+| Preguntas de evaluación de Entornos de Desarrollo | 7.5              | Respuestas a las preguntas con enlaces que las verifican.   |
