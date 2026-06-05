@@ -28,15 +28,16 @@ import java.io.File
 fun main() {
     File("logs").mkdirs()
     System.setProperty("org.slf4j.simpleLogger.logFile", "logs/mongo.log")
-    val mongoUri = "uri"
+
+    val databaseManager = DatabaseManager()
+    databaseManager.inicializarBBDD()
+
+    val mongoUri = databaseManager.leerConexionMongo("./uriMongo/uriMongo.txt")
 
     val mongoClient: MongoClient = MongoClients.create(ConnectionString(mongoUri))
     val mongoDatabase = mongoClient.getDatabase("pabellon")
     val resenasCollection = mongoDatabase.getCollection("resenas")
     val resenaDAO = ResenaDAOMongo(resenasCollection).also { it.asegurarIndices() }
-
-    val databaseManager = DatabaseManager()
-    databaseManager.inicializarBBDD()
 
     val reservaDAO = ReservaDAOH2(databaseManager)
     val pistaDAO = PistaDAOH2()

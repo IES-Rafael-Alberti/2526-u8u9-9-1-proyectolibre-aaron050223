@@ -1,5 +1,7 @@
 package org.iesra.config
 
+import java.io.File
+import java.nio.file.Path
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
@@ -75,6 +77,27 @@ class DatabaseManager {
             }
         } catch (e: SQLException) {
             System.err.println("Error al inicializar la base de datos: ${e.message}")
+        }
+    }
+    /**
+     * Lee la connection string de MongoDB desde el fichero de configuración.
+     * Así evitamos tener las credenciales hardcodeadas en el código.
+     *
+     * @return la connection string o `null` si el fichero no existe o falla la lectura.
+     */
+    fun leerConexionMongo(rutaMongoConfig: String): String? {
+        val archivo = File(rutaMongoConfig)
+        if (!archivo.exists()) {
+            println("No se encontró el fichero de config de Mongo: $rutaMongoConfig")
+            return null
+        }
+        return try {
+            archivo.readLines()
+                .firstOrNull { it.isNotBlank() }
+                ?.trim()
+        } catch (e: Exception) {
+            println("Error al leer la config de Mongo: ${e.message}")
+            null
         }
     }
 }
