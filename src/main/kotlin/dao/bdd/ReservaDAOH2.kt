@@ -12,7 +12,7 @@ import java.sql.SQLException
  * Usa `PreparedStatement` (consultas parametrizadas) y `use { ... }`
  * para cerrar automaticamente la conexion, el statement y el result set.
  */
-class ReservaDAOH2 : ReservaDAO {
+class ReservaDAOH2(val databaseManager: DatabaseManager) : ReservaDAO {
 
     /**
      * Inserta una nueva reserva. El `id` se genera en H2 (autoincrement),
@@ -22,7 +22,6 @@ class ReservaDAOH2 : ReservaDAO {
         val sql = "INSERT INTO reservas (id_pista, fecha, turno, usuario) VALUES (?, ?, ?, ?)"
 
         try {
-            val databaseManager = DatabaseManager()
             databaseManager.conexion().use { conn ->
                 conn.prepareStatement(sql).use { ps ->
                     ps.setInt(1, reserva.idPista)
@@ -47,7 +46,6 @@ class ReservaDAOH2 : ReservaDAO {
         val listaReservas = mutableListOf<Reserva>()
 
         try {
-            val databaseManager = DatabaseManager()
             databaseManager.conexion().use { conn ->
                 conn.prepareStatement(sql).use { ps ->
                     ps.setInt(1, idPista)
@@ -80,7 +78,6 @@ class ReservaDAOH2 : ReservaDAO {
         val listaReservas = mutableListOf<Reserva>()
 
         try {
-            val databaseManager = DatabaseManager()
             databaseManager.conexion().use { conn ->
                 conn.prepareStatement(sql).use { ps ->
                     ps.executeQuery().use {
@@ -109,7 +106,6 @@ class ReservaDAOH2 : ReservaDAO {
         val sql = "SELECT * FROM reservas WHERE id = ?"
 
         try {
-            val databaseManager = DatabaseManager()
             databaseManager.conexion().use { conn ->
                 conn.prepareStatement(sql).use { ps ->
                     ps.setInt(1, id)
@@ -139,7 +135,6 @@ class ReservaDAOH2 : ReservaDAO {
         val sql = "DELETE FROM reservas WHERE id = ?"
 
         try {
-            val databaseManager = DatabaseManager()
             databaseManager.conexion().use { conn ->
                 conn.prepareStatement(sql).use { ps ->
                     ps.setInt(1, id)

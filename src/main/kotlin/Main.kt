@@ -38,16 +38,14 @@ fun main() {
     val databaseManager = DatabaseManager()
     databaseManager.inicializarBBDD()
 
-    val reservaDAO = ReservaDAOH2()
+    val reservaDAO = ReservaDAOH2(databaseManager)
     val pistaDAO = PistaDAOH2()
     val servicio = PabellonService(reservaDAO, pistaDAO, resenaDAO)
     val ui = MenuTerminal(servicio)
 
-    var bucle = true
     do {
-        val continuar = ui.iniciarFlujoReserva()
-        if (!continuar) bucle = false
-    } while (bucle)
+        val noSalir = ui.iniciarFlujoReserva()
+    } while (noSalir)
 
     mongoClient.close()
 }
