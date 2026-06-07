@@ -1,0 +1,103 @@
+package org.iesra.config
+
+import java.io.File
+import java.nio.file.Path
+import java.sql.Connection
+import java.sql.DriverManager
+import java.sql.SQLException
+
+/**
+ * Gestiona la conexion y la inicializacion del esquema H2 local.
+ *
+ * La BBDD se almacena como fichero en `./db/pabellon` y se crean
+ * dos tablas relacionadas:
+ *  - `pistas` (diccionario de deportes)
+ *  - `reservas` (con FK a `pistas.id`)
+ *
+ * Tambien siembra los 4 deportes iniciales.
+ */
+class DatabaseManager {
+    /** URL JDBC de la base de datos H2 en fichero local. */
+    private val URL = "jdbc:h2:./db/pabellon"
+    private val USER = "sa"
+    private val PASSWORD = ""
+
+    /** Devuelve una nueva conexion a la base de datos. */
+    fun conexion(): Connection {
+        return DriverManager.getConnection(URL, USER, PASSWORD)
+    }
+
+    /**
+     * Inicializa el esquema necesario para la aplicacion.
+     *
+     * Crea la tabla `pistas` con sus 4 filas iniciales, y la tabla
+     * `reservas` con FK a `pistas(id)`. Es idempotente (usa
+     * `CREATE TABLE IF NOT EXISTS` y `MERGE`).
+     *
+     * Si el script se cambia, mantener sincronizado con `sql/schema.sql`.
+     */
+    fun inicializarBBDD() {
+        // Script equivalente en el repo: sql/schema.sql
+        val sqlCrearPistas = """
+            CREATE TABLE IF NOT EXISTS pistas (
+                id INT PRIMARY KEY,
+                deporte VARCHAR(50) NOT NULL
+            );
+        """.trimIndent()
+
+        val sqlSeedPistas = """
+            MERGE INTO pistas (id, deporte) KEY(id) VALUES
+              (1, 'Fútbol'),
+              (2, 'Baloncesto'),
+              (3, 'Pádel'),
+              (4, 'Fútbol Sala');
+        """.trimIndent()
+
+        val sqlCrearReservas = """
+            CREATE TABLE IF NOT EXISTS reservas (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                id_pista INT NOT NULL,
+                fecha VARCHAR(10) NOT NULL,
+                turno INT NOT NULL,
+                usuario VARCHAR(100) NOT NULL,
+                CONSTRAINT fk_reservas_pistas
+                    FOREIGN KEY (id_pista) REFERENCES pistas(id)
+                    ON UPDATE RESTRICT
+                    ON DELETE RESTRICT
+            );
+        """.trimIndent()
+
+        try {
+            conexion().use { conn ->
+                conn.createStatement().use { stmt ->
+                    stmt.execute(sqlCrearPistas)
+                    stmt.execute(sqlSeedPistas)
+                    stmt.execute(sqlCrearReservas)
+                }
+            }
+        } catch (e: SQLException) {
+            System.err.println("Error al inicializar la base de datos: ${e.message}")
+        }
+    }
+    /**
+     * Lee la connection string de MongoDB desde el fichero de configuración.
+     * Así evitamos tener las credenciales hardcodeadas en el código.
+     *
+     * @return la connection string o `null` si el fichero no existe o falla la lectura.
+     */
+    fun leerConexionMongo(rutaMongoConfig: String): String? {
+        val archivo = File(rutaMongoConfig)
+        if (!archivo.exists()) {
+            println("No se encontró el fichero de config de Mongo: $rutaMongoConfig")
+            return null
+        }
+        return try {
+            archivo.readLines()
+                .firstOrNull { it.isNotBlank() }
+                ?.trim()
+        } catch (e: Exception) {
+            println("Error al leer la config de Mongo: ${e.message}")
+            null
+        }
+    }
+}

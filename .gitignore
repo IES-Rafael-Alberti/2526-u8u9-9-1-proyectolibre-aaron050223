@@ -46,3 +46,6 @@ bin/
 
 .idea
 .atl
+
+# BBDD
+db/

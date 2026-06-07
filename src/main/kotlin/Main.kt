@@ -1,16 +1,52 @@
 package org.iesra
 
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-fun main() {
-    val name = "Kotlin"
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how IntelliJ IDEA suggests fixing it.
-    println("Hello, " + name + "!")
+import com.mongodb.ConnectionString
+import com.mongodb.client.MongoClient
+import com.mongodb.client.MongoClients
+import org.iesra.config.DatabaseManager
+import org.iesra.dao.bdd.PistaDAOH2
+import org.iesra.dao.bdd.ReservaDAOH2
+import org.iesra.dao.mongo.ResenaDAOMongo
+import org.iesra.service.PabellonService
+import org.iesra.ui.MenuTerminal
+import java.io.File
 
-    for (i in 1..5) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        println("i = $i")
-    }
+/**
+ * Punto de entrada de la aplicacion.
+ *
+ * Pasos del arranque:
+ *  1. Crea la carpeta `logs/` y redirige el log del driver de MongoDB a
+ *     `logs/mongo.log` para no ensuciar la terminal.
+ *  2. Conecta a MongoDB Atlas, selecciona la BD `pabellon` y la coleccion
+ *     `resenas`, y crea el indice unico sobre `reservaId`.
+ *  3. Inicializa el esquema H2 (crea `pistas` y `reservas` con FK, y siembra
+ *     las pistas iniciales).
+ *  4. Construye los DAOs, el servicio y la UI de consola.
+ *  5. Ejecuta el bucle del menu hasta que el usuario decide salir.
+ *  6. Cierra el cliente de MongoDB antes de terminar.
+ */
+fun main() {
+    File("logs").mkdirs()
+    System.setProperty("org.slf4j.simpleLogger.logFile", "logs/mongo.log")
+
+    val databaseManager = DatabaseManager()
+    databaseManager.inicializarBBDD()
+
+    val mongoUri = databaseManager.leerConexionMongo("./uriMongo/uriMongo.txt") ?: return
+
+    val mongoClient: MongoClient = MongoClients.create(ConnectionString(mongoUri))
+    val mongoDatabase = mongoClient.getDatabase("pabellon")
+    val resenasCollection = mongoDatabase.getCollection("resenas")
+    val resenaDAO = ResenaDAOMongo(resenasCollection).also { it.asegurarIndices() }
+
+    val reservaDAO = ReservaDAOH2(databaseManager)
+    val pistaDAO = PistaDAOH2()
+    val servicio = PabellonService(reservaDAO, pistaDAO, resenaDAO)
+    val ui = MenuTerminal(servicio)
+
+    do {
+        val noSalir = ui.iniciarFlujoReserva()
+    } while (noSalir)
+
+    mongoClient.close()
 }
