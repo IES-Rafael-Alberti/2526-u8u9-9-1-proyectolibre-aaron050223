@@ -75,15 +75,15 @@ class ResenaDAOMongo(private val collection: MongoCollection<Document>) : Resena
         val result = collection.deleteOne(Filters.eq("reservaId", reservaId))
         return result.deletedCount > 0
     }
-}
 
-/** Convierte un [Document] de MongoDB en [Resena]. */
-private fun Document.toResena(): Resena {
-    val id = (getObjectId("_id") ?: ObjectId()).toHexString()
-    return Resena(
-        id = id,
-        reservaId = getInteger("reservaId"),
-        nota = getDouble("nota"),
-        descripcion = getString("descripcion")
-    )
+    /** Convierte un [Document] de MongoDB en [Resena]. */
+    private fun Document.toResena(): Resena {
+        val id = (getObjectId("_id") ?: ObjectId()).toHexString()
+        return Resena(
+            id = id,
+            reservaId = getInteger("reservaId"),
+            nota = getDouble("nota"),
+            descripcion = getString("descripcion")
+        )
+    }
 }
